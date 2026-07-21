@@ -19,5 +19,3 @@ ENV PG_META_PORT=8080
 # `npm run start` does not forward signals to child process
 CMD ["node", "dist/server/server.js"]
 EXPOSE 8080
-# --start-period defaults to 0s, but can't be set to 0s (to be explicit) by now
-HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD node -e "fetch('http://localhost:8080/health').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
