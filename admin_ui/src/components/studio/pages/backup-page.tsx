@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Archive, Download, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,7 +14,7 @@ import { useProject } from "@/lib/platform/project-context"
 
 export function BackupPageClient() {
   const { project } = useProject()
-  const { connection, ready } = useStudioConnection()
+  const { connection } = useStudioConnection()
   const [includeData, setIncludeData] = useState(false)
   const [schemaOnly, setSchemaOnly] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -53,64 +53,57 @@ export function BackupPageClient() {
     URL.revokeObjectURL(url)
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "Backup",
+    subtitle: `Logical SQL dump for ${project?.database_name || "database"}`,
+    toolbar: (
+      <>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={schemaOnly}
+              onCheckedChange={(v) => {
+                setSchemaOnly(Boolean(v))
+                if (v) setIncludeData(false)
+              }}
+            />
+            Schema only
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={includeData}
+              onCheckedChange={(v) => {
+                setIncludeData(Boolean(v))
+                if (v) setSchemaOnly(false)
+              }}
+            />
+            Include table data
+          </label>
+          <Button size="sm" onClick={() => void createBackup()} disabled={loading}>
+            {loading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Archive className="size-3.5" />
+            )}
+            Generate dump
+          </Button>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!preview}
+          onClick={download}
+        >
+          <Download className="size-3.5" />
+          Download .sql
+        </Button>
+      </>
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="Backup"
-      subtitle={`Logical SQL dump for ${project?.database_name || "database"}`}
-      toolbar={
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={schemaOnly}
-                onCheckedChange={(v) => {
-                  setSchemaOnly(Boolean(v))
-                  if (v) setIncludeData(false)
-                }}
-              />
-              Schema only
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={includeData}
-                onCheckedChange={(v) => {
-                  setIncludeData(Boolean(v))
-                  if (v) setSchemaOnly(false)
-                }}
-              />
-              Include table data
-            </label>
-            <Button size="sm" onClick={() => void createBackup()} disabled={loading}>
-              {loading ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Archive className="size-3.5" />
-              )}
-              Generate dump
-            </Button>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!preview}
-            onClick={download}
-          >
-            <Download className="size-3.5" />
-            Download .sql
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-3 p-4">
+    <div className="space-y-3 p-4">
         <Alert>
           <AlertDescription className="text-xs">
             Generates a logical SQL dump via catalog introspection (CREATE TABLE /
@@ -130,6 +123,5 @@ export function BackupPageClient() {
           />
         </div>
       </div>
-    </StudioShell>
   )
 }

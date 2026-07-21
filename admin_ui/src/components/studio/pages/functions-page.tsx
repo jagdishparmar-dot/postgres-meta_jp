@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { FunctionSquare, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { DataBrowser, type ColumnDef } from "@/components/studio/data-browser"
 import { NameCell, BoolBadge, SchemaBadge } from "@/components/studio/cells"
 import { FunctionEditorDialog } from "@/components/studio/function-editor-dialog"
@@ -15,7 +15,7 @@ import { dropFunction } from "@/lib/schema-ddl"
 import type { PostgresFunction } from "@/lib/types"
 
 export function FunctionsPageClient() {
-  const { connection, ready } = useStudioConnection()
+  const { connection } = useStudioConnection()
   const [includeSystem, setIncludeSystem] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<PostgresFunction | null>(null)
@@ -134,51 +134,46 @@ export function FunctionsPageClient() {
     [connection, refresh, editing]
   )
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "Functions",
+    subtitle: "Create, edit, and drop database functions",
+    refreshing: loading,
+    onRefresh: refresh,
+    toolbar: (
+      <>
+        <p className="text-sm text-muted-foreground">
+          {loading
+            ? "Loading…"
+            : `${data.length} function${data.length === 1 ? "" : "s"}`}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditing(null)
+              setCreateOpen(true)
+            }}
+          >
+            <Plus className="size-3.5" />
+            New function
+          </Button>
+          <Button
+            variant={includeSystem ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIncludeSystem((v) => !v)}
+          >
+            {includeSystem ? "Hide system schemas" : "Show system schemas"}
+          </Button>
+        </div>
+      </>
+    ),
+  })
+
+  if (!connection) return null
 
   return (
     <>
-      <StudioShell
-        connection={connection}
-        title="Functions"
-        subtitle="Create, edit, and drop database functions"
-        refreshing={loading}
-        onRefresh={refresh}
-        toolbar={
-          <>
-            <p className="text-sm text-muted-foreground">
-              {loading
-                ? "Loading…"
-                : `${data.length} function${data.length === 1 ? "" : "s"}`}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditing(null)
-                  setCreateOpen(true)
-                }}
-              >
-                <Plus className="size-3.5" />
-                New function
-              </Button>
-              <Button
-                variant={includeSystem ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIncludeSystem((v) => !v)}
-              >
-                {includeSystem ? "Hide system schemas" : "Show system schemas"}
-              </Button>
-            </div>
-          </>
-        }
-      >
         <DataBrowser
           rows={data}
           columns={columns}
@@ -189,7 +184,6 @@ export function FunctionsPageClient() {
           searchPlaceholder="Filter functions…"
           onRowClick={(row) => setEditing(row)}
         />
-      </StudioShell>
 
       <FunctionEditorDialog
         open={createOpen || Boolean(editing)}

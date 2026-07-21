@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -63,35 +63,29 @@ export function ConfigPageClient() {
     )
   }, [rows, filter])
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "Database config",
+    subtitle: "PostgreSQL configuration parameters (read-only)",
+    refreshing: loading,
+    onRefresh: () => void load(),
+    toolbar: (
+      <>
+        <Input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter settings…"
+          className="h-8 max-w-xs"
+        />
+        <Badge variant="secondary" className="font-normal">
+          {filtered.length} / {rows.length}
+        </Badge>
+      </>
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="Database config"
-      subtitle="PostgreSQL configuration parameters (read-only)"
-      refreshing={loading}
-      onRefresh={() => void load()}
-      toolbar={
-        <>
-          <Input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter settings…"
-            className="h-8 max-w-xs"
-          />
-          <Badge variant="secondary" className="font-normal">
-            {filtered.length} / {rows.length}
-          </Badge>
-        </>
-      }
-    >
+    <>
       {loading && !rows.length ? (
         <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -128,6 +122,6 @@ export function ConfigPageClient() {
           </TableBody>
         </Table>
       )}
-    </StudioShell>
+    </>
   )
 }

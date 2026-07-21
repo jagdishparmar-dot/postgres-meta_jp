@@ -11,8 +11,17 @@ export function projectOverviewPath(projectId: string): string {
   return `/projects/${projectId}`
 }
 
+/** Default Studio entry when opening a project (Supabase-style). */
+export function projectDefaultStudioPath(projectId: string): string {
+  return studioPath(projectId, "/schemas")
+}
+
 export function projectSettingsPath(projectId: string): string {
   return studioPath(projectId, "/settings")
+}
+
+export function projectRedisPath(projectId: string): string {
+  return studioPath(projectId, "/redis")
 }
 
 export function projectSqlPath(

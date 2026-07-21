@@ -12,7 +12,7 @@ import {
   Save,
 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -176,36 +176,30 @@ export function ProjectSettingsPageClient() {
     }
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
+
+  useStudioPage({
+    title: "Project settings",
+    subtitle: "API URL, CORS, JWT secret, and anon / service_role keys",
+    toolbar: (
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={() => void load()}>
+          <RefreshCw className="size-3.5" />
+          Refresh
+        </Button>
+        <Button size="sm" onClick={() => void save()} disabled={saving || !settings}>
+          {saving ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Save className="size-3.5" />
+          )}
+          Save
+        </Button>
       </div>
-    )
-  }
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="Project settings"
-      subtitle="API URL, CORS, JWT secret, and anon / service_role keys"
-      toolbar={
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void load()}>
-            <RefreshCw className="size-3.5" />
-            Refresh
-          </Button>
-          <Button size="sm" onClick={() => void save()} disabled={saving || !settings}>
-            {saving ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Save className="size-3.5" />
-            )}
-            Save
-          </Button>
-        </div>
-      }
-    >
+    <>
       {loading || !settings ? (
         <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Loading settings…
@@ -314,6 +308,6 @@ export function ProjectSettingsPageClient() {
           </section>
         </div>
       )}
-    </StudioShell>
+    </>
   )
 }

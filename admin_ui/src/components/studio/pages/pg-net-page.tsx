@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Globe, Loader2, RefreshCw, Send, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -127,37 +127,31 @@ export function PgNetPageClient() {
     await load()
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
+
+  useStudioPage({
+    title: "HTTP (pg_net)",
+    subtitle: "Outbound HTTP from Postgres via net.http_get / http_post",
+    toolbar: (
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={() => void load()}>
+          <RefreshCw className="size-3.5" />
+          Refresh
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void clearOld()}
+          disabled={!status?.installed}
+        >
+          <Trash2 className="size-3.5" />
+          Clear old
+        </Button>
       </div>
-    )
-  }
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="HTTP (pg_net)"
-      subtitle="Outbound HTTP from Postgres via net.http_get / http_post"
-      toolbar={
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void load()}>
-            <RefreshCw className="size-3.5" />
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => void clearOld()}
-            disabled={!status?.installed}
-          >
-            <Trash2 className="size-3.5" />
-            Clear old
-          </Button>
-        </div>
-      }
-    >
+    <>
       {status && !status.installed ? (
         <Alert>
           <Globe className="size-4" />
@@ -367,6 +361,6 @@ export function PgNetPageClient() {
           </div>
         </div>
       )}
-    </StudioShell>
+    </>
   )
 }

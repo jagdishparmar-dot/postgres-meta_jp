@@ -1,0 +1,23 @@
+# postgres-meta — internal API only. Do not expose port 8080 publicly.
+# See DEPLOYMENT.md
+
+services:
+  postgres-meta:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    environment:
+      PG_META_HOST: 0.0.0.0
+      PG_META_PORT: 8080
+    expose:
+      - "8080"
+    restart: unless-stopped
+    networks:
+      - pgadmin_internal
+
+networks:
+  pgadmin_internal:
+    name: pgadmin_internal
+    driver: bridge

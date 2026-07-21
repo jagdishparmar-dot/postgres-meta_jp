@@ -14,7 +14,7 @@ import {
   Upload,
 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { TableStructurePanel } from "@/components/studio/table-structure-panel"
 import { CsvImportDialog } from "@/components/studio/csv-import-dialog"
 import { Button } from "@/components/ui/button"
@@ -347,25 +347,16 @@ export function TableDataPageClient({
     }
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
 
-  return (
-    <>
-      <StudioShell
-        connection={connection}
-        title={`${schema}.${currentName}`}
-        subtitle="Table data and structure"
-        refreshing={loading}
-        onRefresh={() => {
-          void reloadMeta()
-        }}
-        toolbar={
+  useStudioPage({
+    title: `${schema}.${currentName}`,
+    subtitle: "Table data and structure",
+    contentVariant: "flush",
+    refreshing: loading,
+    onRefresh: () => {
+      void reloadMeta()
+    },
+    toolbar: (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -456,8 +447,13 @@ export function TableDataPageClient({
               ) : null}
             </div>
           </>
-        }
-      >
+    ),
+  })
+
+  if (!connection) return null
+
+  return (
+    <>
         {tab === "structure" && table ? (
           <TableStructurePanel
             table={table}
@@ -583,7 +579,6 @@ export function TableDataPageClient({
           </div>
         </div>
         )}
-      </StudioShell>
 
       <CsvImportDialog
         open={csvOpen}

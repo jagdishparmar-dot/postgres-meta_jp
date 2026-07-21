@@ -13,7 +13,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -171,13 +171,6 @@ export function OpsPageClient() {
     if (tab === "slow") void loadSlow()
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
 
   const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
     { id: "activity", label: "Activity", icon: Activity },
@@ -186,38 +179,38 @@ export function OpsPageClient() {
     { id: "maintenance", label: "Vacuum / Analyze", icon: Wrench },
   ]
 
+  useStudioPage({
+    title: "Ops & observability",
+    subtitle: "Activity, sizes, slow queries, and maintenance",
+    refreshing: loading,
+    onRefresh: refresh,
+    toolbar: (
+      <>
+        <div className="flex flex-wrap items-center gap-1">
+          {tabs.map((t) => {
+            const Icon = t.icon
+            return (
+              <Button
+                key={t.id}
+                size="sm"
+                variant={tab === t.id ? "default" : "ghost"}
+                onClick={() => setTab(t.id)}
+              >
+                <Icon className="size-3.5" />
+                {t.label}
+              </Button>
+            )
+          })}
+        </div>
+        <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
+          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+          Refresh
+        </Button>
+      </>
+    ),
+  })
+
   return (
-    <StudioShell
-      connection={connection}
-      title="Ops & observability"
-      subtitle="Activity, sizes, slow queries, and maintenance"
-      refreshing={loading}
-      onRefresh={refresh}
-      toolbar={
-        <>
-          <div className="flex flex-wrap items-center gap-1">
-            {tabs.map((t) => {
-              const Icon = t.icon
-              return (
-                <Button
-                  key={t.id}
-                  size="sm"
-                  variant={tab === t.id ? "default" : "ghost"}
-                  onClick={() => setTab(t.id)}
-                >
-                  <Icon className="size-3.5" />
-                  {t.label}
-                </Button>
-              )
-            })}
-          </div>
-          <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
-            Refresh
-          </Button>
-        </>
-      }
-    >
       <div className="p-3">
         {tab === "activity" ? (
           <div className="space-y-4">
@@ -600,6 +593,5 @@ export function OpsPageClient() {
           </div>
         ) : null}
       </div>
-    </StudioShell>
   )
 }

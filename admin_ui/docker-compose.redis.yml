@@ -1,0 +1,19 @@
+# Optional local Redis for linking to a project (Option D)
+# Usage from admin_ui/: docker compose -f docker-compose.redis.yml up -d
+#
+# URL to paste in Studio: redis://:redislocal@localhost:6379/0
+# Or without auth:        redis://localhost:6379/0
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: pgadmin-redis
+    command: ["redis-server", "--requirepass", "redislocal"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:

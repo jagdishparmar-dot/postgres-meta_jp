@@ -20,7 +20,7 @@ Update status as work lands: `pending` · `in_progress` · `done` · `deferred` 
 | P0.3 | Health / setup page | `done` | `/setup` |
 | P1.1 | Projects list + create/archive/delete | `done` | `/projects` — link existing or create DB |
 | P1.2 | Open project → cookie → Studio | `done` | Master URL + `database_name` |
-| P1.3 | Project switcher in topbar | `cancelled` | Switch via `/projects` only |
+| P1.3 | Project switcher in topbar | `done` | Dropdown in Studio topbar |
 | P2.1 | Nest Studio under `/projects/[id]/database/...` | `done` | Legacy `/database/*` redirects |
 | P3.1 | Project-scoped snippets / overview | `done` | `/projects/[id]` + `sql_snippets` |
 
@@ -32,6 +32,7 @@ Update status as work lands: `pending` · `in_progress` · `done` · `deferred` 
 | F0.2 | Tighten custom Studio chrome to match component density | `done` | Comfortable Studio spacing (not ultra-cramped) |
 | F0.3 | Keep blue accent theme (not Supabase green) | `done` | Already in `globals.css` |
 | F0.4 | Shared resource list / proxy patterns | `done` | `/api/meta/[...path]`, `ResourcePage` |
+| F0.5 | Studio UX polish (switcher, breadcrumbs, shortcuts) | `done` | Topbar + flush editors + overview in shell |
 
 ---
 
@@ -191,6 +192,18 @@ Update status as work lands: `pending` · `in_progress` · `done` · `deferred` 
 
 ---
 
+## 11. Redis (shared instance + logical DB)
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| F11.1 | Shared `REDIS_URL` + per-project `redis_db` (0–15) | `done` | Option B; unique DB index per project |
+| F11.2 | Link / auto-assign / unlink + Studio | `done` | `/…/database/redis`; sidebar Redis module |
+| F11.3 | Key browser (SCAN / get / set / delete) | `done` | Scoped to project’s logical DB |
+| F11.4 | Optional local Redis compose | `done` | `docker-compose.redis.yml` |
+| F11.5 | Advanced custom URL override | `done` | Optional bring-your-own (legacy Option D) |
+
+---
+
 ## Suggested order (historical)
 
 1. **F0** — Foundation ← *done*  
@@ -207,6 +220,8 @@ Update status as work lands: `pending` · `in_progress` · `done` · `deferred` 
 
 | Date | Change |
 |------|--------|
+| 2026-07-21 | F11 — Redis Option B: shared REDIS_URL + logical DB 0–15 per project (custom URL still available) |
+| 2026-07-21 | F11.1–F11.4 — Redis Option D: per-project URL link, key browser, local compose |
 | 2026-07-20 | F10.3 — Per-project API keys & settings (anon/service_role, JWT, CORS, URL) |
 | 2026-07-20 | F10.1–F10.2 — pg_cron + pg_net Studio UIs |
 | 2026-07-20 | Storage F9.10–F9.17: policies, public URLs, scan webhook, usage, orphans, zip, lifecycle, audit |

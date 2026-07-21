@@ -1,9 +1,7 @@
 "use client"
 
 import { type ReactNode } from "react"
-import { Loader2 } from "lucide-react"
-import { StudioShell } from "@/components/studio/studio-shell"
-import { useStudioConnection } from "@/hooks/use-studio-connection"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 
 export function StorageShell({
   title,
@@ -16,27 +14,8 @@ export function StorageShell({
   toolbar?: ReactNode
   children: ReactNode
 }) {
-  const { connection, ready } = useStudioConnection()
-
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading…
-      </div>
-    )
-  }
-
-  return (
-    <StudioShell
-      connection={connection}
-      title={title}
-      subtitle={subtitle}
-      toolbar={toolbar}
-    >
-      {children}
-    </StudioShell>
-  )
+  useStudioPage({ title, subtitle, toolbar })
+  return <>{children}</>
 }
 
 export function formatBytes(n: number): string {

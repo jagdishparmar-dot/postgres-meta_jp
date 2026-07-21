@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Copy, Download, FileCode2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,7 +20,7 @@ const LANGS: { id: Lang; label: string }[] = [
 ]
 
 export function GeneratorsPageClient() {
-  const { connection, ready } = useStudioConnection()
+  const { connection } = useStudioConnection()
   const [lang, setLang] = useState<Lang>("typescript")
   const [included, setIncluded] = useState("public")
   const [output, setOutput] = useState("")
@@ -76,78 +76,70 @@ export function GeneratorsPageClient() {
     URL.revokeObjectURL(url)
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "Type generators",
+    subtitle: "Generate client types from the project schema",
+    toolbar: (
+      <>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-lg border border-border p-0.5">
+            {LANGS.map((l) => (
+              <Button
+                key={l.id}
+                size="sm"
+                variant={lang === l.id ? "default" : "ghost"}
+                onClick={() => setLang(l.id)}
+              >
+                {l.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs text-muted-foreground">Schemas</Label>
+            <Input
+              value={included}
+              onChange={(e) => setIncluded(e.target.value)}
+              placeholder="public,app"
+              className="h-8 w-40 font-mono text-xs"
+            />
+          </div>
+          <Button size="sm" onClick={() => void generate()} disabled={loading}>
+            {loading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <FileCode2 className="size-3.5" />
+            )}
+            Generate
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!output}
+            onClick={copy}
+          >
+            <Copy className="size-3.5" />
+            Copy
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!output}
+            onClick={download}
+          >
+            <Download className="size-3.5" />
+            Download
+          </Button>
+        </div>
+      </>
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="Type generators"
-      subtitle="Generate client types from the project schema"
-      toolbar={
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-lg border border-border p-0.5">
-              {LANGS.map((l) => (
-                <Button
-                  key={l.id}
-                  size="sm"
-                  variant={lang === l.id ? "default" : "ghost"}
-                  onClick={() => setLang(l.id)}
-                >
-                  {l.label}
-                </Button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-muted-foreground">Schemas</Label>
-              <Input
-                value={included}
-                onChange={(e) => setIncluded(e.target.value)}
-                placeholder="public,app"
-                className="h-8 w-40 font-mono text-xs"
-              />
-            </div>
-            <Button size="sm" onClick={() => void generate()} disabled={loading}>
-              {loading ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <FileCode2 className="size-3.5" />
-              )}
-              Generate
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!output}
-              onClick={copy}
-            >
-              <Copy className="size-3.5" />
-              Copy
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!output}
-              onClick={download}
-            >
-              <Download className="size-3.5" />
-              Download
-            </Button>
-          </div>
-        </>
-      }
-    >
-      <pre className="max-h-[70vh] overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre">
+    <pre className="max-h-[70vh] overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre">
         {output || "Click Generate to produce types for the selected language."}
-      </pre>
-    </StudioShell>
+    </pre>
   )
 }

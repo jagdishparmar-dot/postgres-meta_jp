@@ -21,9 +21,13 @@ function toConnection(p: PlatformProject): SavedConnection {
 export function useStudioConnection() {
   const router = useRouter()
   const projectCtx = useOptionalProject()
-  const [connection, setConnection] = useState<SavedConnection | null>(null)
-  const [project, setProject] = useState<PlatformProject | null>(null)
-  const [ready, setReady] = useState(false)
+  const initial = projectCtx?.project ?? null
+
+  const [connection, setConnection] = useState<SavedConnection | null>(() =>
+    initial ? toConnection(initial) : null
+  )
+  const [project, setProject] = useState<PlatformProject | null>(() => initial)
+  const [ready, setReady] = useState(() => Boolean(initial))
 
   const refresh = useCallback(async () => {
     if (projectCtx?.project) {
@@ -71,8 +75,14 @@ export function useStudioConnection() {
   }, [router, projectCtx])
 
   useEffect(() => {
+    if (projectCtx?.project) {
+      setProject(projectCtx.project)
+      setConnection(toConnection(projectCtx.project))
+      setReady(true)
+      return
+    }
     void refresh()
-  }, [refresh])
+  }, [projectCtx?.project, refresh])
 
   return { connection, project, ready, refresh }
 }

@@ -25,12 +25,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ConfirmDialog } from "@/components/studio/confirm-dialog"
+import { AdminLogoutButton } from "@/components/admin-logout-button"
+import { EmptyState } from "@/components/studio/empty-state"
 import type { InstanceDatabase, PlatformProject } from "@/lib/platform/types"
-import { projectOverviewPath } from "@/lib/platform/paths"
-
-const selectClass =
-  "flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
+import { projectDefaultStudioPath } from "@/lib/platform/paths"
 
 export default function ProjectsPage() {
   const router = useRouter()
@@ -47,6 +54,11 @@ export default function ProjectsPage() {
   const [mode, setMode] = useState<"link" | "create">("link")
   const [databaseName, setDatabaseName] = useState("")
   const [saving, setSaving] = useState(false)
+  const [confirm, setConfirm] = useState<{
+    type: "archive" | "delete"
+    project: PlatformProject
+  } | null>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
 
   const availableDatabases = databases.filter((d) => !d.linked_project_id)
 
@@ -99,7 +111,7 @@ export default function ProjectsPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to open project")
       toast.success(`Opened ${data.project.name}`)
-      router.push(projectOverviewPath(id))
+      router.push(projectDefaultStudioPath(id))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Open failed")
     } finally {
@@ -108,39 +120,41 @@ export default function ProjectsPage() {
   }
 
   async function archiveProject(project: PlatformProject) {
-    if (!confirm(`Archive project "${project.name}"?`)) return
-    const res = await fetch(`/api/platform/projects/${project.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "archived" }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      toast.error(data.error || "Archive failed")
-      return
-    }
-    toast.success("Project archived")
-    await load()
+    setConfirm({ type: "archive", project })
   }
 
   async function removeProject(project: PlatformProject) {
-    if (
-      !confirm(
-        `Delete project "${project.name}"? This does not drop the database.`
-      )
-    ) {
-      return
+    setConfirm({ type: "delete", project })
+  }
+
+  async function runConfirm() {
+    if (!confirm) return
+    setConfirmLoading(true)
+    try {
+      if (confirm.type === "archive") {
+        const res = await fetch(`/api/platform/projects/${confirm.project.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "archived" }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Archive failed")
+        toast.success("Project archived")
+      } else {
+        const res = await fetch(`/api/platform/projects/${confirm.project.id}`, {
+          method: "DELETE",
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Delete failed")
+        toast.success("Project deleted")
+      }
+      setConfirm(null)
+      await load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Action failed")
+    } finally {
+      setConfirmLoading(false)
     }
-    const res = await fetch(`/api/platform/projects/${project.id}`, {
-      method: "DELETE",
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      toast.error(data.error || "Delete failed")
-      return
-    }
-    toast.success("Project deleted")
-    await load()
   }
 
   async function createProject() {
@@ -203,6 +217,7 @@ export default function ProjectsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <AdminLogoutButton />
             <Button
               variant={includeArchived ? "default" : "outline"}
               size="sm"
@@ -248,17 +263,18 @@ export default function ProjectsPage() {
             Loading projects…
           </div>
         ) : !projects.length ? (
-          <div className="rounded-xl border border-dashed border-border/80 bg-card/50 px-6 py-16 text-center">
-            <FolderKanban className="mx-auto mb-3 size-8 text-muted-foreground" />
-            <p className="text-sm font-medium">No projects yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Link an existing database or create a new one for a project.
-            </p>
-            <Button className="mt-4" onClick={() => setCreateOpen(true)}>
-              <Plus className="size-3.5" />
-              New project
-            </Button>
-          </div>
+          <EmptyState
+            icon={FolderKanban}
+            title="No projects yet"
+            description="Link an existing database or create a new one for a project."
+            action={
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="size-3.5" />
+                New project
+              </Button>
+            }
+            className="rounded-xl bg-card/50 py-16"
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
@@ -394,20 +410,22 @@ export default function ProjectsPage() {
             {mode === "link" ? (
               <div className="space-y-1.5">
                 <Label>Database</Label>
-                <select
-                  className={selectClass}
-                  value={databaseName}
-                  onChange={(e) => setDatabaseName(e.target.value)}
+                <Select
+                  value={databaseName || undefined}
+                  onValueChange={(v) => setDatabaseName(v ?? "")}
+                  disabled={!availableDatabases.length}
                 >
-                  {!availableDatabases.length ? (
-                    <option value="">No available databases</option>
-                  ) : null}
-                  {availableDatabases.map((d) => (
-                    <option key={d.name} value={d.name}>
-                      {d.name} ({d.size})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a database" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDatabases.map((d) => (
+                      <SelectItem key={d.name} value={d.name}>
+                        {d.name} ({d.size})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ) : (
               <div className="space-y-1.5">
@@ -451,6 +469,25 @@ export default function ProjectsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(confirm)}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title={
+          confirm?.type === "archive"
+            ? `Archive "${confirm.project.name}"?`
+            : `Delete "${confirm?.project.name}"?`
+        }
+        description={
+          confirm?.type === "delete"
+            ? "This removes the project from the platform. The database is not dropped."
+            : "The project will be hidden from the active list. You can restore it later."
+        }
+        confirmLabel={confirm?.type === "archive" ? "Archive" : "Delete"}
+        destructive={confirm?.type === "delete"}
+        loading={confirmLoading}
+        onConfirm={() => void runConfirm()}
+      />
     </div>
   )
 }

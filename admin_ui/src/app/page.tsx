@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { projectOverviewPath } from "@/lib/platform/paths"
+import { projectDefaultStudioPath } from "@/lib/platform/paths"
 
 export default function HomePage() {
   const router = useRouter()
@@ -25,7 +25,7 @@ export default function HomePage() {
         const active = await activeRes.json()
         router.replace(
           active.project
-            ? projectOverviewPath(active.project.id)
+            ? projectDefaultStudioPath(active.project.id)
             : "/projects"
         )
       } catch {

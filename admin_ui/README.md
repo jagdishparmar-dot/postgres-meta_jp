@@ -12,6 +12,16 @@ npm run dev
 
 Requires postgres-meta running at `PG_META_URL` (default `http://localhost:1337`).
 
+## Production deployment
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for cloud/Docker setup, required secrets, health checks, and security checklist.
+
+```bash
+cp .env.production.example .env.production
+docker build -t pgadmin-ui .
+docker run --env-file .env.production -p 3000:3000 pgadmin-ui
+```
+
 ## Features
 
 See [FEATURES.md](./FEATURES.md) for the full roadmap and task status.

@@ -37,6 +37,7 @@ import {
   Users,
   Wrench,
   Zap,
+  MemoryStick,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -80,6 +81,19 @@ const MODULES: StudioModule[] = [
     label: "Home",
     icon: Home,
     matchPaths: [],
+    sections: [
+      {
+        label: "Quick links",
+        items: [
+          { path: "/schemas", label: "Database", icon: Database },
+          { path: "/sql", label: "SQL Editor", icon: TerminalSquare },
+          { path: "/tables", label: "Table Editor", icon: Table2 },
+          { path: "/storage", label: "Storage", icon: HardDrive },
+          { path: "/redis", label: "Redis", icon: MemoryStick },
+          { path: "/settings", label: "API settings", icon: Settings2 },
+        ],
+      },
+    ],
   },
   {
     id: "editor",
@@ -243,6 +257,21 @@ const MODULES: StudioModule[] = [
     ],
   },
   {
+    id: "redis",
+    label: "Redis",
+    icon: MemoryStick,
+    defaultPath: "/redis",
+    matchPaths: ["/redis"],
+    sections: [
+      {
+        label: "Cache",
+        items: [
+          { path: "/redis", label: "Keys & link", icon: MemoryStick },
+        ],
+      },
+    ],
+  },
+  {
     id: "ops",
     label: "Ops",
     icon: Activity,
@@ -330,9 +359,10 @@ export function StudioSidebar({
     activeModule.id === "editor" && Boolean(projectId)
 
   const showSecondary =
-    activeModule.id !== "home" &&
     !activeModule.comingSoon &&
-    (isEditorWithProject || Boolean(activeModule.sections?.length))
+    (activeModule.id === "home" ||
+      isEditorWithProject ||
+      Boolean(activeModule.sections?.length))
 
   return (
     <TooltipProvider delay={300}>
@@ -368,9 +398,9 @@ export function StudioSidebar({
                         aria-label={mod.label}
                         onClick={() => activateModule(mod)}
                         className={cn(
-                          "flex size-8 items-center justify-center rounded-md transition-colors",
+                          "relative flex size-8 items-center justify-center rounded-md transition-colors",
                           active && !disabled
-                            ? "bg-white/10 text-foreground"
+                            ? "bg-white/10 text-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-primary"
                             : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
                           disabled && "cursor-not-allowed opacity-35"
                         )}
@@ -452,7 +482,7 @@ export function StudioSidebar({
 
         {/* Secondary contextual sidebar */}
         {showSecondary ? (
-          <aside className="flex w-[240px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+          <aside className="hidden w-[240px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
             <div className="flex h-12 shrink-0 flex-col justify-center border-b border-sidebar-border px-3">
               <p className="truncate text-sm font-medium text-foreground">
                 {activeModule.label}
@@ -507,9 +537,9 @@ export function StudioSidebar({
                               key={item.path}
                               href={href}
                               className={cn(
-                                "group flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                                "group relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                                 active
-                                  ? "bg-sidebar-accent text-foreground"
+                                  ? "bg-sidebar-accent text-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-primary"
                                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
                               )}
                             >

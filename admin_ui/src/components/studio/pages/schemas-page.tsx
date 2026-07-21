@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { Layers, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { DataBrowser, type ColumnDef } from "@/components/studio/data-browser"
 import { NameCell } from "@/components/studio/cells"
 import { SchemaEditorDialog } from "@/components/studio/schema-editor-dialog"
@@ -14,7 +14,7 @@ import { dropSchema } from "@/lib/schema-ddl"
 import type { PostgresSchema } from "@/lib/types"
 
 export function SchemasPageClient() {
-  const { connection, ready } = useStudioConnection()
+  const { connection } = useStudioConnection()
   const [includeSystem, setIncludeSystem] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<PostgresSchema | null>(null)
@@ -112,51 +112,49 @@ export function SchemasPageClient() {
     [connection, refresh, editing]
   )
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
+
+  useStudioPage(
+    {
+      title: "Schemas",
+      subtitle: "Create, rename, and drop schemas",
+      refreshing: loading,
+      onRefresh: refresh,
+      toolbar: (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {loading
+              ? "Loading…"
+              : `${data.length} schema${data.length === 1 ? "" : "s"}`}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditing(null)
+                setCreateOpen(true)
+              }}
+            >
+              <Plus className="size-3.5" />
+              New schema
+            </Button>
+            <Button
+              variant={includeSystem ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIncludeSystem((v) => !v)}
+            >
+              {includeSystem ? "Hide system schemas" : "Show system schemas"}
+            </Button>
+          </div>
+        </>
+      ),
+    },
+    [loading, data.length, includeSystem]
+  )
+
+  if (!connection) return null
 
   return (
     <>
-      <StudioShell
-        connection={connection}
-        title="Schemas"
-        subtitle="Create, rename, and drop schemas"
-        refreshing={loading}
-        onRefresh={refresh}
-        toolbar={
-          <>
-            <p className="text-sm text-muted-foreground">
-              {loading
-                ? "Loading…"
-                : `${data.length} schema${data.length === 1 ? "" : "s"}`}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditing(null)
-                  setCreateOpen(true)
-                }}
-              >
-                <Plus className="size-3.5" />
-                New schema
-              </Button>
-              <Button
-                variant={includeSystem ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIncludeSystem((v) => !v)}
-              >
-                {includeSystem ? "Hide system schemas" : "Show system schemas"}
-              </Button>
-            </div>
-          </>
-        }
-      >
         <DataBrowser
           rows={data}
           columns={columns}
@@ -167,7 +165,6 @@ export function SchemasPageClient() {
           searchPlaceholder="Filter schemas…"
           onRowClick={(row) => setEditing(row)}
         />
-      </StudioShell>
 
       <SchemaEditorDialog
         open={createOpen || Boolean(editing)}

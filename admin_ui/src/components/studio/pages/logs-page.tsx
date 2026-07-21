@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Loader2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -75,33 +75,26 @@ LIMIT 100`),
     if (ready) void load()
   }, [ready, load])
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "Logs",
+    subtitle: "Logging settings + recent session activity (server log files need host access)",
+    refreshing: loading,
+    onRefresh: () => void load(),
+    toolbar: (
+      <Button size="sm" variant="outline" onClick={() => void load()} disabled={loading}>
+        {loading ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="size-3.5" />
+        )}
+        Refresh
+      </Button>
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="Logs"
-      subtitle="Logging settings + recent session activity (server log files need host access)"
-      refreshing={loading}
-      onRefresh={() => void load()}
-      toolbar={
-        <Button size="sm" variant="outline" onClick={() => void load()} disabled={loading}>
-          {loading ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="size-3.5" />
-          )}
-          Refresh
-        </Button>
-      }
-    >
-      <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4">
         <Alert>
           <AlertDescription className="text-xs">
             Full PostgreSQL log file tailing is not available over the SQL API alone.
@@ -176,6 +169,5 @@ LIMIT 100`),
           </div>
         </div>
       </div>
-    </StudioShell>
   )
 }

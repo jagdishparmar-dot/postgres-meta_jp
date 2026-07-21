@@ -13,7 +13,7 @@ import {
   Save,
 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -262,21 +262,12 @@ export function SqlEditorPageClient() {
     return result.columns
   }, [result])
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
 
-  return (
-    <>
-    <StudioShell
-      connection={connection}
-      title="SQL Editor"
-      subtitle="Run queries against the connected database · Ctrl/⌘+Enter run · select text to run selection"
-      toolbar={
+  useStudioPage({
+    title: "SQL Editor",
+    subtitle: "Run queries against the connected database · Ctrl/⌘+Enter run · select text to run selection",
+    contentVariant: "flush",
+    toolbar: (
         <>
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" onClick={() => void onRun()} disabled={running}>
@@ -433,8 +424,11 @@ export function SqlEditorPageClient() {
             ) : null}
           </div>
         </>
-      }
-    >
+    ),
+  })
+
+  return (
+    <>
       <div className="flex min-h-[70vh] flex-col">
         <div className="border-b border-border p-3">
           <Textarea
@@ -543,7 +537,6 @@ export function SqlEditorPageClient() {
           ) : null}
         </div>
       </div>
-    </StudioShell>
 
     <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
       <DialogContent className="sm:max-w-md">

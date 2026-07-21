@@ -23,7 +23,7 @@ import {
   Upload,
 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -631,23 +631,14 @@ export function StoragePageClient() {
     }
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
 
   const empty =
     !loadingObjects && folders.length === 0 && objects.length === 0
 
-  return (
-    <StudioShell
-      connection={connection}
-      title="Storage"
-      subtitle="Buckets and objects · metadata in project DB · files in RustFS"
-      toolbar={
+  useStudioPage({
+    title: "Storage",
+    subtitle: "Buckets and objects · metadata in project DB · files in RustFS",
+    toolbar: (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -718,8 +709,11 @@ export function StoragePageClient() {
             onChange={(e) => void onZipImport(e.target.files)}
           />
         </div>
-      }
-    >
+    ),
+  })
+
+  return (
+    <>
       {status && !status.configured ? (
         <Alert>
           <HardDrive className="size-4" />
@@ -1416,6 +1410,6 @@ export function StoragePageClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </StudioShell>
+    </>
   )
 }

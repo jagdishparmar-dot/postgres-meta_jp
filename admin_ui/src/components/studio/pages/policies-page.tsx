@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { Pencil, Plus, Shield, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { DataBrowser, type ColumnDef } from "@/components/studio/data-browser"
 import { NameCell, SchemaBadge } from "@/components/studio/cells"
 import { PolicyEditorDialog } from "@/components/studio/policy-editor-dialog"
@@ -15,7 +15,7 @@ import { dropPolicy } from "@/lib/security-ddl"
 import type { PostgresPolicy } from "@/lib/types"
 
 export function PoliciesPageClient() {
-  const { connection, ready } = useStudioConnection()
+  const { connection } = useStudioConnection()
   const [includeSystem, setIncludeSystem] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<PostgresPolicy | null>(null)
@@ -136,51 +136,46 @@ export function PoliciesPageClient() {
     [connection, refresh, editing]
   )
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "Policies",
+    subtitle: "Create and manage row-level security policies",
+    refreshing: loading,
+    onRefresh: refresh,
+    toolbar: (
+      <>
+        <p className="text-sm text-muted-foreground">
+          {loading
+            ? "Loading…"
+            : `${data.length} polic${data.length === 1 ? "y" : "ies"}`}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditing(null)
+              setCreateOpen(true)
+            }}
+          >
+            <Plus className="size-3.5" />
+            New policy
+          </Button>
+          <Button
+            variant={includeSystem ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIncludeSystem((v) => !v)}
+          >
+            {includeSystem ? "Hide system schemas" : "Show system schemas"}
+          </Button>
+        </div>
+      </>
+    ),
+  })
+
+  if (!connection) return null
 
   return (
     <>
-      <StudioShell
-        connection={connection}
-        title="Policies"
-        subtitle="Create and manage row-level security policies"
-        refreshing={loading}
-        onRefresh={refresh}
-        toolbar={
-          <>
-            <p className="text-sm text-muted-foreground">
-              {loading
-                ? "Loading…"
-                : `${data.length} polic${data.length === 1 ? "y" : "ies"}`}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditing(null)
-                  setCreateOpen(true)
-                }}
-              >
-                <Plus className="size-3.5" />
-                New policy
-              </Button>
-              <Button
-                variant={includeSystem ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIncludeSystem((v) => !v)}
-              >
-                {includeSystem ? "Hide system schemas" : "Show system schemas"}
-              </Button>
-            </div>
-          </>
-        }
-      >
         <DataBrowser
           rows={data}
           columns={columns}
@@ -191,7 +186,6 @@ export function PoliciesPageClient() {
           searchPlaceholder="Filter policies…"
           onRowClick={(row) => setEditing(row)}
         />
-      </StudioShell>
 
       <PolicyEditorDialog
         open={createOpen || Boolean(editing)}

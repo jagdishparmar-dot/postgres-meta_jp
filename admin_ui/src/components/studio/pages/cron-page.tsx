@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -168,36 +168,30 @@ export function CronPageClient() {
     await load(job.jobid)
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
+
+  useStudioPage({
+    title: "Cron",
+    subtitle: "pg_cron — schedule SQL jobs inside Postgres",
+    toolbar: (
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={() => void load(selectedJobId)}>
+          <RefreshCw className="size-3.5" />
+          Refresh
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => setOpen(true)}
+          disabled={!status?.installed}
+        >
+          <Plus className="size-3.5" />
+          New job
+        </Button>
       </div>
-    )
-  }
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="Cron"
-      subtitle="pg_cron — schedule SQL jobs inside Postgres"
-      toolbar={
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void load(selectedJobId)}>
-            <RefreshCw className="size-3.5" />
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setOpen(true)}
-            disabled={!status?.installed}
-          >
-            <Plus className="size-3.5" />
-            New job
-          </Button>
-        </div>
-      }
-    >
+    <>
       {status && !status.installed ? (
         <Alert>
           <Clock className="size-4" />
@@ -431,6 +425,6 @@ export function CronPageClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </StudioShell>
+    </>
   )
 }

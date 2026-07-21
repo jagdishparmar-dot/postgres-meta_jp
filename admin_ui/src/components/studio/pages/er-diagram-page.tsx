@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { KeyRound, Loader2, ZoomIn, ZoomOut } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStudioConnection } from "@/hooks/use-studio-connection"
@@ -80,68 +80,61 @@ export function ErDiagramPageClient() {
     return m
   }, [nodes])
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
+
+  useStudioPage({
+    title: "ER diagram",
+    subtitle: "Tables and foreign-key relationships",
+    refreshing: loading,
+    onRefresh: () => void load(),
+    toolbar: (
+      <>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Schema</label>
+          <select
+            className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
+            value={schema}
+            onChange={(e) => {
+              setSchema(e.target.value)
+              setSelectedId(null)
+              setPan({ x: 0, y: 0 })
+            }}
+          >
+            {schemas.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+            {!schemas.length ? <option value="public">public</option> : null}
+          </select>
+          <Badge variant="secondary" className="font-normal">
+            {nodes.length} tables · {edges.length} relations
+          </Badge>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
+          >
+            <ZoomOut className="size-3.5" />
+          </Button>
+          <span className="w-12 text-center font-mono text-xs text-muted-foreground">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setZoom((z) => Math.min(1.8, z + 0.1))}
+          >
+            <ZoomIn className="size-3.5" />
+          </Button>
+        </div>
+      </>
+    ),
+  })
 
   return (
-    <StudioShell
-      connection={connection}
-      title="ER diagram"
-      subtitle="Tables and foreign-key relationships"
-      refreshing={loading}
-      onRefresh={() => void load()}
-      toolbar={
-        <>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground">Schema</label>
-            <select
-              className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
-              value={schema}
-              onChange={(e) => {
-                setSchema(e.target.value)
-                setSelectedId(null)
-                setPan({ x: 0, y: 0 })
-              }}
-            >
-              {schemas.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-              {!schemas.length ? <option value="public">public</option> : null}
-            </select>
-            <Badge variant="secondary" className="font-normal">
-              {nodes.length} tables · {edges.length} relations
-            </Badge>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
-            >
-              <ZoomOut className="size-3.5" />
-            </Button>
-            <span className="w-12 text-center font-mono text-xs text-muted-foreground">
-              {Math.round(zoom * 100)}%
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setZoom((z) => Math.min(1.8, z + 0.1))}
-            >
-              <ZoomIn className="size-3.5" />
-            </Button>
-          </div>
-        </>
-      }
-    >
-      <div
+    <div
         className="relative h-[calc(100vh-11rem)] cursor-grab overflow-hidden bg-[radial-gradient(circle_at_1px_1px,oklch(1_0_0_/_0.06)_1px,transparent_0)] bg-size-[18px_18px] active:cursor-grabbing"
         onPointerDown={(e) => {
           if ((e.target as HTMLElement).closest("[data-er-node]")) return
@@ -322,6 +315,5 @@ export function ErDiagramPageClient() {
           Drag to pan · double-click table to open · scroll zoom via buttons
         </div>
       </div>
-    </StudioShell>
   )
 }

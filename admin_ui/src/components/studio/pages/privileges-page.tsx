@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { KeyRound, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { StudioShell } from "@/components/studio/studio-shell"
+import { useStudioPage } from "@/components/studio/studio-page-meta"
 import { DataBrowser, type ColumnDef } from "@/components/studio/data-browser"
 import { NameCell, SchemaBadge } from "@/components/studio/cells"
 import { GrantPrivilegeDialog } from "@/components/studio/grant-privilege-dialog"
@@ -25,7 +25,7 @@ import type {
 } from "@/lib/types"
 
 export function PrivilegesPageClient() {
-  const { connection, ready } = useStudioConnection()
+  const { connection } = useStudioConnection()
   const [includeSystem, setIncludeSystem] = useState(false)
   const [grantOpen, setGrantOpen] = useState(false)
   const [selected, setSelected] = useState<PostgresTablePrivileges | null>(null)
@@ -134,50 +134,45 @@ export function PrivilegesPageClient() {
     }
   }
 
-  if (!ready || !connection) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading connection…
-      </div>
-    )
-  }
 
   // Keep detail in sync after refresh
   const detail =
     selected &&
     (data.find((r) => r.relation_id === selected.relation_id) ?? selected)
 
+  useStudioPage({
+    title: "Table privileges",
+    subtitle: "Grant and revoke privileges on tables and views",
+    refreshing: loading,
+    onRefresh: refresh,
+    toolbar: (
+      <>
+        <p className="text-sm text-muted-foreground">
+          {loading
+            ? "Loading…"
+            : `${data.length} relation${data.length === 1 ? "" : "s"}`}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setGrantOpen(true)}>
+            <Plus className="size-3.5" />
+            Grant
+          </Button>
+          <Button
+            variant={includeSystem ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIncludeSystem((v) => !v)}
+          >
+            {includeSystem ? "Hide system schemas" : "Show system schemas"}
+          </Button>
+        </div>
+      </>
+    ),
+  })
+
+  if (!connection) return null
+
   return (
     <>
-      <StudioShell
-        connection={connection}
-        title="Table privileges"
-        subtitle="Grant and revoke privileges on tables and views"
-        refreshing={loading}
-        onRefresh={refresh}
-        toolbar={
-          <>
-            <p className="text-sm text-muted-foreground">
-              {loading
-                ? "Loading…"
-                : `${data.length} relation${data.length === 1 ? "" : "s"}`}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setGrantOpen(true)}>
-                <Plus className="size-3.5" />
-                Grant
-              </Button>
-              <Button
-                variant={includeSystem ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIncludeSystem((v) => !v)}
-              >
-                {includeSystem ? "Hide system schemas" : "Show system schemas"}
-              </Button>
-            </div>
-          </>
-        }
-      >
         <DataBrowser
           rows={data}
           columns={columns}
@@ -188,7 +183,6 @@ export function PrivilegesPageClient() {
           searchPlaceholder="Filter relations…"
           onRowClick={(row) => setSelected(row)}
         />
-      </StudioShell>
 
       <GrantPrivilegeDialog
         open={grantOpen}
