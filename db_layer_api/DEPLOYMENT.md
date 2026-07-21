@@ -15,7 +15,14 @@ cd db_layer_api
 docker build -t postgres-meta .
 ```
 
-This uses the existing multi-stage `Dockerfile`:
+**Important:** `package-lock.json` must stay in sync with `package.json`. If Docker build fails with `npm ci` / missing packages from lock file, run locally:
+
+```bash
+npm install
+git add package-lock.json && git commit -m "Sync package-lock.json"
+```
+
+This uses the multi-stage `Dockerfile`:
 
 1. `npm ci` + `npm run build` (TypeScript → `dist/`)
 2. Slim runtime image with `node dist/server/server.js` on port **8080**

@@ -3,7 +3,7 @@ WORKDIR /usr/src/app
 # Do `npm ci` separately so we can cache `node_modules`
 # https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
 COPY package.json package-lock.json ./
-RUN npm clean-install
+RUN npm ci
 COPY . .
 RUN npm run build && npm prune --omit=dev
 
