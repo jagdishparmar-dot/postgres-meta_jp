@@ -4,11 +4,35 @@ import { getSecret } from '../lib/secrets.js'
 import { AccessControl } from './templates/swift.js'
 import pkg from '#package.json' with { type: 'json' }
 
-export const PG_META_HOST = process.env.PG_META_HOST || '0.0.0.0'
+/** Listen address inside the container — not your public URL. */
+function normalizeListenHost(value: string | undefined): string {
+  const raw = value?.trim()
+  if (!raw) return '0.0.0.0'
+  if (/^https?:\/\//i.test(raw) || raw.includes('/')) {
+    console.warn(
+      `[postgres-meta] PG_META_HOST="${raw}" looks like a URL. Using 0.0.0.0 to listen inside the container. Set PG_META_HOST=0.0.0.0 explicitly.`
+    )
+    return '0.0.0.0'
+  }
+  return raw
+}
+
+/** Postgres hostname only — no scheme, path, or full connection string. */
+function normalizeDbHost(value: string | undefined, fallback: string): string {
+  const raw = value?.trim() || fallback
+  if (/^postgres(ql)?:\/\//i.test(raw)) {
+    throw new Error(
+      'PG_META_DB_HOST must be a hostname (e.g. postgres.example.com). Use PG_META_DB_URL for a full connection string.'
+    )
+  }
+  return raw.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0] || fallback
+}
+
+export const PG_META_HOST = normalizeListenHost(process.env.PG_META_HOST)
 export const PG_META_PORT = Number(process.env.PG_META_PORT || 1337)
 export const CRYPTO_KEY = (await getSecret('CRYPTO_KEY')) || 'SAMPLE_KEY'
 
-const PG_META_DB_HOST = process.env.PG_META_DB_HOST || 'localhost'
+const PG_META_DB_HOST = normalizeDbHost(process.env.PG_META_DB_HOST, 'localhost')
 const PG_META_DB_NAME = process.env.PG_META_DB_NAME || 'postgres'
 const PG_META_DB_USER = process.env.PG_META_DB_USER || 'postgres'
 const PG_META_DB_PORT = process.env.PG_META_DB_PORT || '5432'

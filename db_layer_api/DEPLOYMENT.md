@@ -136,8 +136,47 @@ Both services must share a Docker network (or VPC / private subnet in cloud).
 ### Coolify / similar
 
 1. Create a **private** service from `db_layer_api/Dockerfile`
-2. Do not assign a public domain
-3. Set admin_ui `PG_META_URL` to the internal service URL Coolify provides
+2. Base directory: `db_layer_api`
+3. Port: **8080**
+4. Do **not** assign a public domain to postgres-meta (admin_ui calls it internally)
+5. Set admin_ui `PG_META_URL` to Coolify's **internal** service URL (e.g. `http://<service-name>:8080`)
+
+**Coolify env vars (postgres-meta service):**
+
+| Variable | Example | Notes |
+|----------|---------|-------|
+| `PG_META_HOST` | `0.0.0.0` | **Always** `0.0.0.0` inside Docker — not your public URL |
+| `PG_META_PORT` | `8080` | Container port |
+| `PG_META_DB_URL` | `postgresql://user:pass@host:5432/postgres` | Preferred for managed Postgres |
+| `PG_META_DB_HOST` | `zsi6j1g15rgxyjgmmmv7uecp.intoship.cloud` | Hostname **only** — no `https://` |
+| `PG_META_DB_SSL_MODE` | `require` | Use `require` for cloud Postgres |
+
+**Common startup error:**
+
+```
+getaddrinfo ENOTFOUND https://your-domain.intoship.cloud
+```
+
+Cause: `PG_META_HOST` or `PG_META_DB_HOST` was set to a full URL (`https://...`) instead of a bare hostname.
+
+Fix:
+
+```env
+PG_META_HOST=0.0.0.0
+PG_META_DB_URL=postgresql://USER:PASSWORD@zsi6j1g15rgxyjgmmmv7uecp.intoship.cloud:5432/postgres
+PG_META_DB_SSL_MODE=require
+```
+
+Or split URL into parts:
+
+```env
+PG_META_DB_HOST=zsi6j1g15rgxyjgmmmv7uecp.intoship.cloud
+PG_META_DB_PORT=5432
+PG_META_DB_USER=...
+PG_META_DB_PASSWORD=...
+PG_META_DB_NAME=postgres
+PG_META_DB_SSL_MODE=require
+```
 
 ---
 
