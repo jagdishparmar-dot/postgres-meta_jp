@@ -66,6 +66,36 @@ function getMasterUrl() {
   )
 }
 
+async function runSqlFile(connectionString, file, label) {
+  const sql = readFileSync(file, "utf8")
+  const client = new Client({ connectionString })
+  await client.connect()
+  try {
+    console.log(`Bootstrap ${label}: ${file.split(/[/\\]/).pop()}…`)
+    await client.query(sql)
+  } finally {
+    await client.end()
+  }
+}
+
+async function ensureSupabaseBootstrap(masterUrl) {
+  const bootstrapDir = join(__dirname, "../db/bootstrap")
+  await runSqlFile(masterUrl, join(bootstrapDir, "00-supabase-roles.sql"), "postgres")
+  await runSqlFile(masterUrl, join(bootstrapDir, "01-extensions.sql"), "postgres")
+  await runSqlFile(masterUrl, join(bootstrapDir, "02-database-schemas.sql"), "postgres")
+}
+
+async function ensurePlatformDatabaseBootstrap(platformUrl) {
+  const parts = parseDbUrl(platformUrl)
+  if (parts.database === "postgres") return
+  const bootstrapDir = join(__dirname, "../db/bootstrap")
+  await runSqlFile(
+    platformUrl,
+    join(bootstrapDir, "02-database-schemas.sql"),
+    parts.database
+  )
+}
+
 async function ensureDatabase(platformUrl, masterUrl) {
   const parts = parseDbUrl(platformUrl)
   const adminUrl =
@@ -150,7 +180,9 @@ async function main() {
   console.log(`Platform: ${mask(platformUrl)}`)
 
   await verifyMaster(masterUrl)
+  await ensureSupabaseBootstrap(masterUrl)
   await ensureDatabase(platformUrl, masterUrl)
+  await ensurePlatformDatabaseBootstrap(platformUrl)
   await applyMigrations(platformUrl)
   console.log("Done. Create projects in the UI to link or create databases.")
 }

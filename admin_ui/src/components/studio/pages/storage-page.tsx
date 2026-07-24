@@ -113,7 +113,10 @@ export function StoragePageClient() {
   const { connection, ready } = useStudioConnection()
   const projectId = project?.id
 
-  const [status, setStatus] = useState<{ configured: boolean } | null>(null)
+  const [status, setStatus] = useState<{
+    configured: boolean
+    error?: string
+  } | null>(null)
   const [buckets, setBuckets] = useState<StorageBucket[]>([])
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null)
   const [prefix, setPrefix] = useState("")
@@ -179,9 +182,26 @@ export function StoragePageClient() {
   }, [prefix])
 
   const loadStatus = useCallback(async () => {
-    const res = await fetch("/api/platform/storage/status")
-    const data = await res.json()
-    setStatus({ configured: Boolean(data.configured) })
+    try {
+      const res = await fetch("/api/platform/storage/status")
+      const data = (await res.json()) as {
+        configured?: boolean
+        error?: string
+      }
+      if (!res.ok) {
+        setStatus({
+          configured: false,
+          error: data.error || `Storage status failed (${res.status})`,
+        })
+        return
+      }
+      setStatus({ configured: Boolean(data.configured) })
+    } catch {
+      setStatus({
+        configured: false,
+        error: "Could not reach the storage status API.",
+      })
+    }
   }, [])
 
   const loadBuckets = useCallback(async () => {
@@ -635,10 +655,11 @@ export function StoragePageClient() {
   const empty =
     !loadingObjects && folders.length === 0 && objects.length === 0
 
-  useStudioPage({
-    title: "Storage",
-    subtitle: "Buckets and objects · metadata in project DB · files in RustFS",
-    toolbar: (
+  useStudioPage(
+    {
+      title: "Storage",
+      subtitle: "Buckets and objects · metadata in project DB · files in RustFS",
+      toolbar: (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -709,8 +730,16 @@ export function StoragePageClient() {
             onChange={(e) => void onZipImport(e.target.files)}
           />
         </div>
-    ),
-  })
+      ),
+    },
+    [
+      status?.configured,
+      selectedBucketId,
+      selectedBucket,
+      uploading,
+      importingZip,
+    ]
+  )
 
   return (
     <>
@@ -719,11 +748,19 @@ export function StoragePageClient() {
           <HardDrive className="size-4" />
           <AlertTitle>RustFS not configured</AlertTitle>
           <AlertDescription>
-            Set <code className="text-xs">RUSTFS_ENDPOINT</code>,{" "}
+            {status.error ? (
+              <p className="mb-2">{status.error}</p>
+            ) : null}
+            Set{" "}
+            <code className="text-xs">RUSTFS_ENDPOINT</code>,{" "}
             <code className="text-xs">RUSTFS_ACCESS_KEY</code>, and{" "}
-            <code className="text-xs">RUSTFS_SECRET_KEY</code> in{" "}
-            <code className="text-xs">.env.local</code>, then restart the admin
-            UI.
+            <code className="text-xs">RUSTFS_SECRET_KEY</code> on the admin_ui
+            service, then restart it.
+            <p className="mt-2 text-xs text-muted-foreground">
+              Docker stack example:{" "}
+              <code className="text-xs">RUSTFS_ENDPOINT=http://rustfs:9000</code>
+              . The RustFS container must be on the same network as admin_ui.
+            </p>
           </AlertDescription>
         </Alert>
       ) : (

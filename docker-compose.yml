@@ -1,0 +1,144 @@
+# Full stack — Supabase Postgres, Redis, RustFS, postgres-meta, admin_ui
+# All services share one internal network; only admin_ui is published.
+#
+# Usage:
+#   cp .env.stack.example .env   # edit secrets first
+#   docker compose up -d --build
+#   open http://localhost:3000
+#
+# See README.md § "Docker stack"
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-supabase/postgres:17.6.1.136}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./admin_ui/db/bootstrap:/docker-entrypoint-initdb.d:ro
+    command:
+      [
+        "postgres",
+        "-c",
+        "config_file=/etc/postgresql/postgresql.conf",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-U",
+          "${POSTGRES_USER:-postgres}",
+          "-h",
+          "localhost",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - pgadmin_stack
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD:-redislocal}",
+      ]
+    volumes:
+      - redis_data:/data
+    networks:
+      - pgadmin_stack
+    restart: unless-stopped
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: "*"
+    volumes:
+      - rustfs_data:/data
+      - rustfs_logs:/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - pgadmin_stack
+    restart: unless-stopped
+
+  postgres-meta:
+    build:
+      context: ./db_layer_api
+      dockerfile: Dockerfile
+    environment:
+      PG_META_HOST: 0.0.0.0
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: postgres
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: ${POSTGRES_USER:-postgres}
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      PG_META_DB_SSL_MODE: disable
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pgadmin_stack
+    restart: unless-stopped
+
+  admin_ui:
+    build:
+      context: ./admin_ui
+      dockerfile: Dockerfile
+    ports:
+      - "${ADMIN_UI_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      RUN_PLATFORM_SETUP: "true"
+      PG_META_URL: http://postgres-meta:8080
+      PG_MASTER_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      PLATFORM_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/pgadmin_platform
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redislocal}@redis:6379
+      RUSTFS_ENDPOINT: http://rustfs:9000
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      RUSTFS_REGION: ${RUSTFS_REGION:-us-east-1}
+      RUSTFS_FORCE_PATH_STYLE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-meta:
+        condition: service_started
+      redis:
+        condition: service_started
+      rustfs:
+        condition: service_healthy
+    networks:
+      - pgadmin_stack
+    restart: unless-stopped
+
+networks:
+  pgadmin_stack:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rustfs_data:
+  rustfs_logs:

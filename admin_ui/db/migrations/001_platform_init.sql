@@ -1,7 +1,7 @@
 -- Platform control-plane schema (pgadmin_platform)
 -- Applied by: npm run platform:setup
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 CREATE TABLE IF NOT EXISTS platform_meta (
   key   text PRIMARY KEY,
